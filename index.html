@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vote — LunarLabs</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060a12;
+    --surface: #0c1220;
+    --border: #1a2540;
+    --accent: #4af0c8;
+    --accent2: #5b7fff;
+    --warn: #f0b44a;
+    --text: #c8d8f0;
+    --muted: #4a5a78;
+    --voted: #2adf8a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Starfield */
+  .stars {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(1px 1px at 10% 20%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 60%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 40% 10%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 35%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 80% 70%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 45%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 55%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 40%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 50% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 50%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 95% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 95%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  }
+
+  /* Glow orbs */
+  .orb {
+    position: fixed; border-radius: 50%; filter: blur(80px); pointer-events: none; z-index: 0;
+  }
+  .orb-1 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(74,240,200,0.06) 0%, transparent 70%);
+    top: -150px; right: -100px;
+  }
+  .orb-2 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(91,127,255,0.07) 0%, transparent 70%);
+    bottom: -100px; left: -100px;
+  }
+
+  .container {
+    position: relative; z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 56px;
+    animation: fadeDown 0.6s ease both;
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    position: relative;
+  }
+
+  .logo-icon svg { width: 100%; height: 100%; }
+
+  .logo-text {
+    font-size: 13px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 14px;
+  }
+
+  .subtitle {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  .subtitle em {
+    color: var(--warn);
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    animation: fadeDown 0.6s 0.1s ease both;
+  }
+
+  .progress-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .progress-label span {
+    color: var(--accent);
+    font-size: 14px;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 6px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent2), var(--accent));
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 0 8px var(--accent);
+  }
+
+  /* Cards */
+  .vote-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .vote-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    transition: border-color 0.2s, transform 0.2s;
+    animation: fadeUp 0.5s ease both;
+    cursor: default;
+  }
+
+  .vote-card:hover { border-color: rgba(74,240,200,0.25); transform: translateY(-1px); }
+  .vote-card.voted { border-color: rgba(42,223,138,0.3); background: rgba(42,223,138,0.04); }
+
+  .card-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    width: 20px;
+    flex-shrink: 0;
+    text-align: center;
+  }
+
+  .card-info { flex: 1; min-width: 0; }
+
+  .card-site {
+    font-size: 15px;
+    font-weight: 700;
+    color: #e0ecff;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-domain {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .vote-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    border: none;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .vote-btn.pending {
+    background: rgba(74,240,200,0.1);
+    color: var(--accent);
+    border: 1px solid rgba(74,240,200,0.25);
+  }
+  .vote-btn.pending:hover {
+    background: rgba(74,240,200,0.18);
+    box-shadow: 0 0 16px rgba(74,240,200,0.15);
+  }
+
+  .vote-btn.done {
+    background: rgba(42,223,138,0.1);
+    color: var(--voted);
+    border: 1px solid rgba(42,223,138,0.3);
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .check-icon {
+    width: 16px; height: 16px;
+    display: none;
+  }
+
+  .vote-btn.done .check-icon { display: block; }
+  .vote-btn.done .arrow-icon { display: none; }
+
+  .arrow-icon { width: 14px; height: 14px; }
+
+  /* Reset */
+  .reset-wrap {
+    text-align: center;
+    margin-top: 28px;
+    animation: fadeUp 0.5s 0.4s ease both;
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.05em;
+  }
+  .reset-btn:hover { border-color: var(--muted); color: var(--text); }
+
+  /* Note */
+  .note {
+    margin-top: 40px;
+    padding: 16px 20px;
+    background: rgba(240,180,74,0.06);
+    border: 1px solid rgba(240,180,74,0.2);
+    border-radius: 10px;
+    font-size: 13px;
+    color: rgba(240,180,74,0.8);
+    line-height: 1.6;
+    animation: fadeUp 0.5s 0.5s ease both;
+  }
+  .note strong { color: var(--warn); }
+
+  /* Animations */
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .vote-card:nth-child(1) { animation-delay: 0.12s; }
+  .vote-card:nth-child(2) { animation-delay: 0.18s; }
+  .vote-card:nth-child(3) { animation-delay: 0.24s; }
+  .vote-card:nth-child(4) { animation-delay: 0.30s; }
+  .vote-card:nth-child(5) { animation-delay: 0.36s; }
+  .vote-card:nth-child(6) { animation-delay: 0.42s; }
+  .vote-card:nth-child(7) { animation-delay: 0.48s; }
+
+  /* Pop animation on voted */
+  @keyframes pop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.06); }
+    100% { transform: scale(1); }
+  }
+  .vote-btn.just-voted { animation: pop 0.3s ease; }
+</style>
+</head>
+<body>
+
+<div class="stars"></div>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="container">
+
+  <header>
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="18" cy="18" r="10" stroke="#4af0c8" stroke-width="1.5" fill="none"/>
+          <circle cx="18" cy="18" r="4" fill="#4af0c8" opacity="0.8"/>
+          <ellipse cx="18" cy="18" rx="17" ry="6" stroke="#4af0c8" stroke-width="1" opacity="0.3" fill="none"/>
+        </svg>
+      </div>
+      <span class="logo-text">LunarLabs</span>
+    </div>
+    <h1>Cast Your Votes</h1>
+    <p class="subtitle">Vote on all sites daily to boost our rank.<br>Takes <em>2 minutes</em>, means everything.</p>
+  </header>
+
+  <div class="progress-wrap">
+    <div class="progress-label">VOTED <span id="count">0</span>/7</div>
+    <div class="bar-track">
+      <div class="bar-fill" id="bar" style="width:0%"></div>
+    </div>
+    <div class="progress-label" id="pct" style="color:var(--accent)">0%</div>
+  </div>
+
+  <div class="vote-list" id="voteList"></div>
+
+  <div class="reset-wrap">
+    <button class="reset-btn" onclick="resetVotes()">↺ Reset votes (next day)</button>
+  </div>
+
+  <div class="note">
+    <strong>Heads up:</strong> Checkmarks are saved in your browser. They reset when you click "Reset votes" — do this each day before voting again to keep things fresh.
+  </div>
+
+</div>
+
+<script>
+const SITES = [
+  { id: 'mco',   name: 'MinecraftServers.org',      domain: 'minecraftservers.org',           url: 'https://minecraftservers.org/vote/685936' },
+  { id: 'tmc',   name: 'TopMinecraftServers.org',   domain: 'topminecraftservers.org',        url: 'https://topminecraftservers.org/vote/43186' },
+  { id: 'cf',    name: 'CurseForge Servers',        domain: 'curseforge.com',                 url: 'https://www.curseforge.com/servers/minecraft/game/lunarlabs/vote' },
+  { id: 'mr',    name: 'MineRank',                  domain: 'minerank.com',                   url: 'https://www.minerank.com/lunarlabs/vote#vote-now' },
+  { id: 'bmc',   name: 'Best-Minecraft-Servers.co', domain: 'best-minecraft-servers.co',      url: 'https://best-minecraft-servers.co/server-lunarlabs.32628/vote' },
+  { id: 'mbs',   name: 'MinecraftBestServers.com',  domain: 'minecraftbestservers.com',       url: 'https://minecraftbestservers.com/server-lunarlabs.6781/vote' },
+  { id: 'msl',   name: 'Minecraft-Server-List.com', domain: 'minecraft-server-list.com',      url: 'https://minecraft-server-list.com/server/519138/vote/' },
+];
+
+const KEY = 'll_votes_v1';
+
+function getVoted() {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; }
+}
+
+function saveVoted(v) {
+  localStorage.setItem(KEY, JSON.stringify(v));
+}
+
+function updateProgress() {
+  const voted = getVoted();
+  const n = Object.values(voted).filter(Boolean).length;
+  const pct = Math.round((n / SITES.length) * 100);
+  document.getElementById('count').textContent = n;
+  document.getElementById('bar').style.width = pct + '%';
+  document.getElementById('pct').textContent = pct + '%';
+}
+
+function markVoted(id) {
+  const voted = getVoted();
+  voted[id] = true;
+  saveVoted(voted);
+
+  const card = document.getElementById('card-' + id);
+  const btn  = document.getElementById('btn-'  + id);
+
+  card.classList.add('voted');
+  btn.classList.remove('pending');
+  btn.classList.add('done', 'just-voted');
+  btn.querySelector('.btn-label').textContent = 'Voted!';
+  setTimeout(() => btn.classList.remove('just-voted'), 350);
+
+  updateProgress();
+}
+
+function buildCards() {
+  const voted = getVoted();
+  const list = document.getElementById('voteList');
+  list.innerHTML = '';
+
+  SITES.forEach((site, i) => {
+    const isVoted = !!voted[site.id];
+
+    const card = document.createElement('div');
+    card.className = 'vote-card' + (isVoted ? ' voted' : '');
+    card.id = 'card-' + site.id;
+
+    card.innerHTML = `
+      <span class="card-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="card-info">
+        <div class="card-site">${site.name}</div>
+        <div class="card-domain">${site.domain}</div>
+      </div>
+      <a id="btn-${site.id}"
+         href="${site.url}"
+         target="_blank"
+         rel="noopener"
+         class="vote-btn ${isVoted ? 'done' : 'pending'}"
+         onclick="handleVote('${site.id}', event)">
+        <svg class="check-icon" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <svg class="arrow-icon" viewBox="0 0 14 14" fill="none">
+          <path d="M2 7h10M8 3l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="btn-label">${isVoted ? 'Voted!' : 'Vote'}</span>
+      </a>
+    `;
+
+    list.appendChild(card);
+  });
+
+  updateProgress();
+}
+
+function handleVote(id, e) {
+  // Let the link open, then mark as voted after short delay
+  setTimeout(() => markVoted(id), 300);
+}
+
+function resetVotes() {
+  if (confirm('Reset all vote checkmarks? Do this at the start of each new voting day.')) {
+    localStorage.removeItem(KEY);
+    buildCards();
+  }
+}
+
+buildCards();
+</script>
+</body>
+</html>
